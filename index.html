@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Module Scanner">
+<meta name="theme-color" content="#080808">
+<title>Module Scanner</title>
+<style>
+:root{--bg:#080808;--s1:#111;--s2:#1a1a1a;--bd:#252525;--tx:#e8e8e8;--mu:#555;--mu2:#2a2a2a;--ac:#f59e0b;--bl:#3b82f6;--gn:#22c55e;--rd:#ef4444;--r:10px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:ui-monospace,'SF Mono',monospace;min-height:100dvh;overflow-x:hidden}
+.page{display:none;flex-direction:column;min-height:100dvh}.page.active{display:flex}
+.hdr{position:sticky;top:0;z-index:50;background:rgba(8,8,8,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);padding:12px 16px;padding-top:calc(12px + var(--st));display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.hdr-l{display:flex;align-items:center;gap:10px;min-width:0}
+.hdr-l .sub{font-size:9px;color:var(--mu);letter-spacing:.2em;margin-bottom:2px}
+.hdr-l .ttl{font-size:16px;font-weight:700;color:#fff;letter-spacing:.04em}
+.hdr-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.back-btn{height:34px;padding:0 12px;font-size:12px;font-weight:700;font-family:inherit;letter-spacing:.06em;border:1px solid var(--bd);border-radius:7px;background:var(--s2);color:var(--tx);cursor:pointer}
+.back-btn:active{opacity:.7}
+.mode-toggle{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:5px 10px;cursor:pointer;user-select:none}
+.mt-opt{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--mu);transition:color .2s}
+.mt-opt.active{color:var(--ac)}
+.mt-sep{font-size:10px;color:var(--bd)}
+/* HOME */
+.home-scroll{flex:1;overflow-y:auto;padding:14px 14px calc(20px + var(--sb))}
+.home-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center}
+.stat-num{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:9px;color:var(--mu);letter-spacing:.1em}
+.sc-done{color:var(--gn)}.sc-prog{color:var(--ac)}.sc-empty{color:var(--mu)}
+.section-lbl{font-size:9px;color:var(--mu);letter-spacing:.15em;margin-bottom:8px;padding-left:2px}
+.mvps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mvps-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:10px 8px;cursor:pointer;transition:border-color .2s;text-align:center}
+.mvps-card:active{opacity:.75}
+.mvps-card.st-done{border-color:#1a4a1a;background:#080f08}
+.mvps-card.st-progress{border-color:#3a2800;background:#100d00}
+.mc-num{font-size:12px;font-weight:700;color:var(--tx);letter-spacing:.02em;margin-bottom:2px}
+.mc-cnt{font-size:9px;color:var(--mu);letter-spacing:.05em;min-height:12px}
+.mc-dot{width:6px;height:6px;border-radius:50%;margin:4px auto 0;background:var(--mu2)}
+.st-done .mc-dot{background:var(--gn)}.st-done .mc-num{color:var(--gn)}
+.st-progress .mc-dot{background:var(--ac)}.st-progress .mc-num{color:var(--ac)}
+/* MVPS PAGE */
+.mvps-scroll{flex:1;overflow-y:auto;padding:14px 14px 130px}
+.done-btn{height:32px;padding:0 12px;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:.06em;border:1px solid #1a4a1a;border-radius:7px;background:#080f08;color:var(--gn);cursor:pointer}
+.done-btn:active{opacity:.7}.done-btn.marked{border-color:var(--gn);background:#0d2a0d}
+/* CARDS */
+.empty{text-align:center;padding:60px 20px}
+.empty .ico{font-size:48px;margin-bottom:14px}
+.empty .t{font-size:13px;color:var(--mu);letter-spacing:.1em;margin-bottom:6px}
+.empty .s{font-size:11px;color:var(--mu2);letter-spacing:.06em}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:12px;overflow:hidden;animation:fu .2s ease}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;border-bottom:1px solid var(--bd);gap:8px}
+.ch-l{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.ch-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.num-badge{background:var(--ac);color:#000;font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;letter-spacing:.04em;flex-shrink:0}
+.csn{font-size:15px;font-weight:700;color:var(--ac);letter-spacing:.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csn.dim{color:var(--mu);font-size:12px;font-weight:400}
+.pills{display:flex;gap:4px;padding:0 12px 10px}
+.pill{flex:1;height:3px;border-radius:2px;background:var(--mu2);transition:background .3s}
+.pill.done{background:var(--gn)}.pill.act{background:var(--ac)}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd)}
+.pc{background:var(--s1);padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.plbl{font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--mu);align-self:flex-start}
+.pimg{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;border:1px solid var(--bd);display:block}
+.ph{width:100%;aspect-ratio:4/3;border-radius:7px;border:2px dashed var(--mu2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--mu2);cursor:pointer;background:var(--s2)}
+.ph:active{border-color:var(--mu)}.ph.off{opacity:.3;pointer-events:none}
+.ph .ei{font-size:28px}.ph .et{font-size:9px;letter-spacing:.1em}
+.pname{font-size:10px;word-break:break-all;text-align:center;line-height:1.4}
+.pname.ready{color:var(--bl)}.pname.dim{color:var(--mu2)}
+.srow{padding:8px 12px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.sbadge{font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:4px;flex-shrink:0}
+.sscan{background:#0d2a0d;color:var(--gn);border:1px solid #1a4a1a;animation:bl 1s infinite}
+.sfound{background:#0d1525;color:var(--bl);border:1px solid #1e3a6a}
+.snope{background:#200d0d;color:var(--rd);border:1px solid #4a1a1a}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+.sv{font-size:13px;font-weight:700;color:var(--ac)}
+.irow{padding:10px 12px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.irow label{font-size:10px;color:var(--mu);white-space:nowrap}
+.irow input{flex:1;min-width:0;background:var(--s2);border:1px solid var(--bd);border-radius:7px;color:#fff;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:.04em;padding:8px 10px;outline:none;-webkit-appearance:none}
+.irow input:focus{border-color:var(--ac)}
+/* HOLD TO DELETE */
+.del-hold{position:relative;overflow:hidden;width:34px;height:32px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.dhf{position:absolute;inset:0;background:var(--rd);transform-origin:left;transform:scaleX(0);transition:transform 1.5s linear;opacity:.35}
+.del-hold.holding .dhf{transform:scaleX(1)}
+/* BUTTONS */
+.btn{border:none;cursor:pointer;font-family:inherit;font-weight:700;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:opacity .15s;letter-spacing:.05em}
+.btn:active{opacity:.7}.btn:disabled{opacity:.3;cursor:default}
+.bsm{height:32px;padding:0 11px;font-size:11px}
+.bset{height:40px;padding:0 14px;font-size:13px;background:var(--ac);color:#000;flex-shrink:0}
+.bedit{height:32px;padding:0 11px;font-size:11px;background:#1a1200;color:var(--ac);border:1px solid #3a2800}
+.bdel{background:var(--s2);color:var(--mu);border:1px solid var(--bd)}
+.bgn{background:#0a1f0a;color:var(--gn);border:1px solid #1a4a1a}
+/* BOTTOM */
+.btm{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,8,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--bd);padding:12px 14px;padding-bottom:calc(12px + var(--sb));display:flex;gap:10px;align-items:center}
+.bnew{flex:1;height:54px;font-size:14px;background:var(--ac);color:#000;border-radius:var(--r)}
+.bzip{height:54px;padding:0 16px;font-size:11px;flex-direction:column;gap:1px;background:#0d1525;color:var(--bl);border:1px solid #1e3a6a;border-radius:var(--r)}
+.bzip .zi{font-size:18px;line-height:1}
+/* SAVE INDICATOR */
+.save-ind{position:fixed;bottom:calc(80px + var(--sb));right:14px;z-index:90;background:#0a1f0a;color:var(--gn);border:1px solid #1a4a1a;border-radius:20px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:.08em;opacity:0;transition:opacity .3s;pointer-events:none}
+.save-ind.vis{opacity:1}
+/* TOAST */
+.toast{position:fixed;top:calc(68px + var(--st));left:50%;transform:translateX(-50%);border-radius:20px;padding:8px 20px;font-size:12px;font-weight:700;letter-spacing:.06em;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center}
+.tok{background:#0a1f0a;color:var(--gn);border:1px solid #1a4a1a}
+.twarn{background:#1a1200;color:var(--ac);border:1px solid #3a2800}
+.tshow{opacity:1}
+/* MODALS */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:200;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow-y:auto;padding:20px 14px;padding-top:calc(20px + var(--st));padding-bottom:calc(20px + var(--sb))}
+.modal.hid{display:none}
+.mbox{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:14px;max-width:420px;width:100%;margin:auto}
+.mttl{font-size:14px;font-weight:700;color:#fff;letter-spacing:.06em}
+.msub{font-size:11px;color:var(--mu);letter-spacing:.04em;line-height:1.6}
+.minp{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:7px;color:#fff;font-family:inherit;font-size:16px;font-weight:700;letter-spacing:.06em;padding:10px 12px;outline:none;-webkit-appearance:none}
+.minp:focus{border-color:var(--ac)}
+.mbtn-row{display:flex;gap:8px}
+.mbtn-ok{flex:1;height:44px;font-size:13px;background:var(--ac);color:#000}
+.mbtn-cl{height:44px;padding:0 16px;font-size:13px;background:var(--s2);color:var(--mu);border:1px solid var(--bd)}
+.review-item{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ri-num{font-size:9px;color:var(--mu);letter-spacing:.15em;font-weight:700}
+.ri-file{font-size:12px;color:var(--bl);letter-spacing:.03em;padding:5px 8px;background:var(--bg);border-radius:5px;border:1px solid var(--bd)}
+.ovt{font-size:16px;font-weight:700;color:#fff;letter-spacing:.06em;text-align:center}
+.ovs{font-size:12px;color:var(--mu);text-align:center;max-width:280px}
+.prog{width:260px;height:4px;background:var(--bd);border-radius:2px;overflow:hidden}
+.progf{height:100%;background:var(--ac);border-radius:2px;transition:width .3s}
+.spin{font-size:36px;animation:sp 1.2s linear infinite;text-align:center}
+@keyframes sp{to{transform:rotate(360deg)}}
+.zlink{background:#0d1525;border:1px solid #1e3a6a;border-radius:var(--r);padding:16px;text-align:center;width:100%;max-width:300px}
+.zlink p{font-size:11px;color:var(--mu);margin-bottom:10px;letter-spacing:.04em;line-height:1.6}
+.zlink a{display:block;background:var(--bl);color:#fff;border-radius:8px;padding:13px;font-size:13px;font-weight:700;letter-spacing:.06em;text-decoration:none}
+.zlink a:active{opacity:.8}
+.ccol{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 0}
+.csel{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:7px;color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;padding:9px 12px;outline:none;-webkit-appearance:none}
+.sel-lbl{font-size:10px;color:var(--mu);letter-spacing:.1em}
+/* SYNC & SETTINGS */
+.gear-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--mu);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gear-btn:active{opacity:.7}
+.sync-bar{background:#0d1525;border:1px solid #1e3a6a;border-radius:var(--r);padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sync-bar .sb-txt{font-size:11px;color:var(--mu);letter-spacing:.06em;flex:1;line-height:1.5}
+.sync-bar .sb-txt strong{color:var(--bl);display:block;font-size:12px;margin-bottom:2px}
+.sync-now-btn{height:36px;padding:0 14px;font-size:11px;font-weight:700;font-family:inherit;letter-spacing:.06em;border:none;border-radius:7px;background:var(--bl);color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.sync-now-btn:active{opacity:.7}
+.synced-dot{width:7px;height:7px;border-radius:50%;background:var(--bl);display:inline-block;margin-left:4px;vertical-align:middle}
+/* SYNC PROGRESS */
+.sp-row{display:flex;align-items:center;gap:10px;width:100%;max-width:300px}
+.sp-icon{font-size:20px;flex-shrink:0}
+.sp-txt{font-size:11px;color:var(--mu);flex:1;letter-spacing:.04em}
+.sp-status{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:4px}
+.sp-ok{background:#0a1f0a;color:var(--gn);border:1px solid #1a4a1a}
+.sp-err{background:#200d0d;color:var(--rd);border:1px solid #4a1a1a}
+.sp-pend{background:var(--s2);color:var(--mu);border:1px solid var(--bd)}
+.sp-act{background:#0d1525;color:var(--bl);border:1px solid #1e3a6a;animation:bl 1s infinite}
+
+.hid{display:none!important}
+canvas{display:none}
+</style>
+</head>
+<body>
+
+<!-- HOME PAGE -->
+<div class="page active" id="pgHome">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div>
+        <div class="sub">ACWA · FIELD TOOL</div>
+        <div class="ttl">MODULE SCANNER</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <div class="mode-toggle" onclick="toggleMode()">
+        <span class="mt-opt active" id="mtB">BARCODE</span>
+        <span class="mt-sep">|</span>
+        <span class="mt-opt" id="mtO">OCR</span>
+      </div>
+      <button class="gear-btn" onclick="openSettings()" title="Settings">&#9881;</button>
+    </div>
+  </div>
+  <div class="home-scroll">
+    <div class="sync-bar" id="syncBar">
+      <div class="sb-txt"><strong>AIRTABLE SYNC</strong><span id="syncStatus">Configure in settings &#9881;</span></div>
+      <button class="sync-now-btn" onclick="runSync()">&#8593; SYNC NOW</button>
+    </div>
+    <div class="home-stats">
+      <div class="stat-card"><div class="stat-num sc-done" id="sDone">0</div><div class="stat-lbl">DONE</div></div>
+      <div class="stat-card"><div class="stat-num sc-prog" id="sProg">0</div><div class="stat-lbl">IN PROGRESS</div></div>
+      <div class="stat-card"><div class="stat-num sc-empty" id="sRem">246</div><div class="stat-lbl">REMAINING</div></div>
+    </div>
+    <div class="section-lbl">ALL MVPSs — TAP TO OPEN</div>
+    <div class="mvps-grid" id="mvpsGrid"></div>
+  </div>
+</div>
+
+<!-- MVPS PAGE -->
+<div class="page" id="pgMvps">
+  <div class="hdr">
+    <div class="hdr-l">
+      <button class="back-btn" onclick="goHome()">&#8592; HOME</button>
+      <div>
+        <div class="sub" id="mvpsSub">MVPS</div>
+        <div class="ttl" id="mvpsTitle">MVPS-1</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <button class="done-btn" id="doneBtn" onclick="toggleDone()">MARK DONE</button>
+    </div>
+  </div>
+  <div class="mvps-scroll">
+    <div class="empty" id="mvpsEmpty">
+      <div class="ico">&#11036;</div>
+      <div class="t">NO MODULES YET</div>
+      <div class="s">TAP + ADD MODULE BELOW</div>
+    </div>
+    <div id="modList"></div>
+  </div>
+  <div class="btm">
+    <button class="btn bnew" onclick="addMod()">+ ADD MODULE</button>
+    <button class="btn bzip" onclick="openZip()"><span class="zi">&#128230;</span>ZIP</button>
+  </div>
+</div>
+
+<div class="save-ind" id="saveInd">&#10003; SAVED</div>
+<div class="toast tok" id="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal hid" id="mSett">
+  <div class="mbox">
+    <div class="mttl">&#9881; SETTINGS</div>
+    <div class="msub">Enter your Airtable credentials to enable cloud sync. Your token is stored only on this device.</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="sel-lbl">AIRTABLE API TOKEN</div>
+      <input class="minp" id="settToken" type="password" placeholder="patXXXXXX..."
+        autocomplete="off" spellcheck="false">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="sel-lbl">YOUR NAME (shown in Airtable)</div>
+      <input class="minp" id="settName" type="text" placeholder="e.g. Abdullah"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:10px 12px">
+      <div style="font-size:9px;color:var(--mu);letter-spacing:.1em;margin-bottom:4px">BASE ID (pre-configured)</div>
+      <div style="font-size:12px;color:var(--bl);font-weight:700;letter-spacing:.04em">appmZPXOy2ZZXNzua</div>
+    </div>
+    <div class="mbtn-row">
+      <button class="btn mbtn-cl" onclick="cm('mSett')">CANCEL</button>
+      <button class="btn mbtn-ok" onclick="saveSettings()">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC PROGRESS MODAL -->
+<div class="modal hid" id="mSync">
+  <div class="mbox" style="max-width:480px">
+    <div class="mttl">&#8593; SYNCING TO AIRTABLE</div>
+    <div class="msub" id="syncModalSub"></div>
+    <div class="prog" style="width:100%"><div class="progf" id="syncProgf" style="width:0%"></div></div>
+    <div id="syncList" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+    <button class="btn mbtn-cl hid" id="syncClose" onclick="cm('mSync')">CLOSE</button>
+  </div>
+</div>
+
+<!-- ZIP NAME MODAL -->
+<div class="modal hid" id="mName">
+  <div class="mbox">
+    <div class="mttl">EXPORT ZIP</div>
+    <div class="msub" id="mNameSub"></div>
+    <input class="minp" id="zipName" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" onkeydown="if(event.key==='Enter')goReview()">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="sel-lbl">IMAGE QUALITY</div>
+      <select class="csel" id="compSel">
+        <option value="high">HIGH — ~1MB per photo</option>
+        <option value="medium" selected>MEDIUM — ~500KB per photo</option>
+        <option value="low">LOW — ~250KB per photo</option>
+        <option value="original">ORIGINAL — no compression</option>
+      </select>
+    </div>
+    <div class="mbtn-row">
+      <button class="btn mbtn-cl" onclick="cm('mName')">CANCEL</button>
+      <button class="btn mbtn-ok" onclick="goReview()">REVIEW FILES</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="modal hid" id="mReview">
+  <div class="mbox" style="max-width:480px">
+    <div class="mttl">REVIEW FILE NAMES</div>
+    <div class="msub" id="reviewSub"></div>
+    <div id="reviewList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="mbtn-row">
+      <button class="btn mbtn-cl" onclick="cm('mReview')">BACK</button>
+      <button class="btn mbtn-ok" onclick="buildZip()">BUILD ZIP</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS MODAL -->
+<div class="modal hid" id="mProg">
+  <div class="ccol" style="flex:1">
+    <div class="spin" id="spin">&#9881;&#65039;</div>
+    <div class="ovt" id="ovt">BUILDING ZIP...</div>
+    <div class="prog"><div class="progf" id="progf" style="width:0%"></div></div>
+    <div class="ovs" id="ovs"></div>
+    <div class="zlink hid" id="zlink">
+      <p>TAP AND HOLD THE BUTTON BELOW<br>THEN TAP "DOWNLOAD LINKED FILE"</p>
+      <a id="zurl" href="#">&#128230; SAVE ZIP FILE</a>
+    </div>
+    <button class="btn bsm bdel hid" id="ovcls" onclick="cm('mProg')">CLOSE</button>
+  </div>
+</div>
+
+<input type="file" id="ifront" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="ilabel" accept="image/*" capture="environment" style="display:none">
+<canvas id="cvs"></canvas>
+
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+
+var TOTAL=246, curId=null, mods=[], nextNum=1, scanMode='barcode', mvpsMeta={};
+var DB=null;
+
+// ── DB ──────────────────────────────────────
+function openDB(){
+  return new Promise(function(ok,err){
+    var r=indexedDB.open('mscanner3',1);
+    r.onupgradeneeded=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains('mods')){
+        var s=db.createObjectStore('mods',{keyPath:'id'});
+        s.createIndex('mvid','mvid',{unique:false});
+      }
+      if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta',{keyPath:'id'});
+    };
+    r.onsuccess=function(e){DB=e.target.result;ok()};
+    r.onerror=function(){err()};
+  });
+}
+function dbSaveMod(m){
+  if(!DB)return;
+  try{DB.transaction('mods','readwrite').objectStore('mods').put({id:m.id,mvid:curId,num:m.num,sn:m.sn,ok:m.ok,furl:m.furl,lurl:m.lurl,ff:m.ff||null,lf:m.lf||null})}catch(e){}
+}
+function dbDelMod(id){
+  if(!DB)return;
+  try{DB.transaction('mods','readwrite').objectStore('mods').delete(id)}catch(e){}
+}
+function dbLoadMods(mvid){
+  return new Promise(function(ok){
+    if(!DB){ok([]);return}
+    try{var r=DB.transaction('mods','readonly').objectStore('mods').index('mvid').getAll(mvid);r.onsuccess=function(){ok(r.result||[])};r.onerror=function(){ok([])}}catch(e){ok([])}
+  });
+}
+function dbSaveMeta(id,st,cnt){
+  if(!DB)return;
+  try{DB.transaction('meta','readwrite').objectStore('meta').put({id:id,status:st,count:cnt});mvpsMeta[id]={status:st,count:cnt}}catch(e){}
+}
+function dbLoadMeta(){
+  return new Promise(function(ok){
+    if(!DB){ok([]);return}
+    try{var r=DB.transaction('meta','readonly').objectStore('meta').getAll();r.onsuccess=function(){ok(r.result||[])};r.onerror=function(){ok([])}}catch(e){ok([])}
+  });
+}
+function flashSaved(){
+  var e=document.getElementById('saveInd');e.classList.add('vis');clearTimeout(e._t);e._t=setTimeout(function(){e.classList.remove('vis')},1200);
+}
+
+// ── SCAN MODE ────────────────────────────────
+function toggleMode(){
+  scanMode=scanMode==='barcode'?'ocr':'barcode';
+  document.getElementById('mtB').className='mt-opt'+(scanMode==='barcode'?' active':'');
+  document.getElementById('mtO').className='mt-opt'+(scanMode==='ocr'?' active':'');
+  notify('Mode: '+(scanMode==='barcode'?'Barcode':'OCR'));
+}
+
+// ── ZIP BUILDER ──────────────────────────────
+var ENC=new TextEncoder();
+function u16(n){var b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,n,true);return b}
+function u32(n){var b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n,true);return b}
+function cat(){var a=Array.from(arguments),t=a.reduce(function(s,b){return s+b.length},0),o=new Uint8Array(t),p=0;for(var i=0;i<a.length;i++){o.set(a[i],p);p+=a[i].length}return o}
+function crc32(d){var c=0xFFFFFFFF;for(var i=0;i<d.length;i++){c^=d[i];for(var j=0;j<8;j++)c=(c&1)?(c>>>1)^0xEDB88320:c>>>1}return(c^0xFFFFFFFF)>>>0}
+function mkzip(files){
+  var SL=new Uint8Array([0x50,0x4B,0x03,0x04]),SC=new Uint8Array([0x50,0x4B,0x01,0x02]),SE=new Uint8Array([0x50,0x4B,0x05,0x06]);
+  var locs=[],off=0;
+  for(var i=0;i<files.length;i++){var f=files[i],nm=ENC.encode(f.name),crc=crc32(f.data),sz=f.data.length;var lh=cat(SL,u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nm.length),u16(0),nm);locs.push({lh:lh,data:f.data,off:off,nm:nm,crc:crc,sz:sz});off+=lh.length+sz}
+  var cds=[],cdo=off,cds_=0;
+  for(var i=0;i<locs.length;i++){var f=locs[i];var cd=cat(SC,u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(f.crc),u32(f.sz),u32(f.sz),u16(f.nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(f.off),f.nm);cds.push(cd);cds_+=cd.length}
+  var eocd=cat(SE,u16(0),u16(0),u16(locs.length),u16(locs.length),u32(cds_),u32(cdo),u16(0));
+  var p=[];for(var i=0;i<locs.length;i++){p.push(locs[i].lh);p.push(locs[i].data)}for(var i=0;i<cds.length;i++)p.push(cds[i]);p.push(eocd);
+  return cat.apply(null,p);
+}
+
+// ── UTILS ────────────────────────────────────
+function toDataURL(file){return new Promise(function(ok,err){var r=new FileReader();r.onload=function(){ok(r.result)};r.onerror=err;r.readAsDataURL(file)})}
+function compressImg(url,maxD,q){
+  return new Promise(function(ok){
+    var img=new Image();img.onload=function(){var W=img.naturalWidth,H=img.naturalHeight,sc=Math.min(1,maxD/Math.max(W,H)),c=document.createElement('canvas');c.width=Math.round(W*sc);c.height=Math.round(H*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(function(b){if(!b){ok(null);return}var r=new FileReader();r.onload=function(){ok(r.result)};r.onerror=function(){ok(null)};r.readAsArrayBuffer(b)},'image/jpeg',q)};img.onerror=function(){ok(null)};img.src=url;
+  });
+}
+function getComp(){var v=(document.getElementById('compSel')||{}).value||'medium';if(v==='high')return{maxD:3000,q:0.92};if(v==='medium')return{maxD:2048,q:0.82};if(v==='low')return{maxD:1280,q:0.70};return{maxD:9999,q:1}}
+
+// ── EXIF ─────────────────────────────────────
+function getExif(file){return new Promise(function(ok){var r=new FileReader();r.onload=function(e){try{var v=new DataView(e.target.result);if(v.getUint16(0,false)!==0xFFD8){ok(1);return}var l=v.byteLength,o=2;while(o<l){if(v.getUint16(o,false)===0xFFE1){o+=4;if(v.getUint32(o,false)!==0x45786966){ok(1);return}var li=v.getUint16(o+=6,false)===0x4949;o+=v.getUint32(o+4,li);var t=v.getUint16(o,li);o+=2;for(var i=0;i<t;i++){if(v.getUint16(o+(i*12),li)===0x0112){ok(v.getUint16(o+(i*12)+8,li));return}}}else if((v.getUint16(o,false)&0xFF00)!==0xFF00)break;else o+=2+v.getUint16(o+2,false)}}catch(e){}ok(1)};r.onerror=function(){ok(1)};r.readAsArrayBuffer(file.slice(0,65536))})}
+function drawOri(ctx,img,o,W,H){ctx.save();switch(o){case 2:ctx.transform(-1,0,0,1,W,0);break;case 3:ctx.transform(-1,0,0,-1,W,H);break;case 4:ctx.transform(1,0,0,-1,0,H);break;case 5:ctx.transform(0,1,1,0,0,0);break;case 6:ctx.transform(0,1,-1,0,H,0);break;case 7:ctx.transform(0,-1,-1,0,H,W);break;case 8:ctx.transform(0,-1,1,0,0,W);break}ctx.drawImage(img,0,0);ctx.restore()}
+
+// ── BARCODE ──────────────────────────────────
+var BD=null;if('BarcodeDetector' in window){try{BD=new BarcodeDetector()}catch(e){}}
+async function scanBC(file,url){
+  if(!BD)return null;
+  var cvs=document.getElementById('cvs'),ctx=cvs.getContext('2d');
+  try{
+    var ori=await getExif(file),rot=(ori>=5&&ori<=8);
+    var img=await new Promise(function(ok,err){var i=new Image();i.onload=function(){ok(i)};i.onerror=err;i.src=url});
+    var W=img.naturalWidth,H=img.naturalHeight,cw=rot?H:W,ch=rot?W:H;
+    var sc=Math.min(1,1600/Math.max(cw,ch));cvs.width=Math.round(cw*sc);cvs.height=Math.round(ch*sc);ctx.scale(sc,sc);drawOri(ctx,img,ori,W,H);ctx.setTransform(1,0,0,1,0,0);
+    var r=await BD.detect(cvs);if(r.length)return r[0].rawValue.trim();
+    cvs.width=cw;cvs.height=ch;drawOri(ctx,img,ori,W,H);r=await BD.detect(cvs);if(r.length)return r[0].rawValue.trim();
+    var id=ctx.getImageData(0,0,cw,ch),px=id.data;for(var i=0;i<px.length;i+=4){var g=Math.round(0.299*px[i]+0.587*px[i+1]+0.114*px[i+2]);var b=Math.min(255,Math.max(0,(g-128)*2+128));px[i]=px[i+1]=px[i+2]=b}ctx.putImageData(id,0,0);
+    r=await BD.detect(cvs);if(r.length)return r[0].rawValue.trim();
+    for(var ri=0;ri<[1,6,3,8].length;ri++){var o=[1,6,3,8][ri],rt=(o>=5&&o<=8);cvs.width=rt?H:W;cvs.height=rt?W:H;drawOri(ctx,img,o,W,H);r=await BD.detect(cvs);if(r.length)return r[0].rawValue.trim()}
+  }catch(e){}return null;
+}
+
+// ── OCR ──────────────────────────────────────
+var ocrW=null,ocrR=false;
+function loadTess(){return new Promise(function(ok){if(window.Tesseract){ok();return}var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=ok;s.onerror=ok;document.head.appendChild(s)})}
+async function initOCR(){if(ocrR)return true;try{await loadTess();if(!window.Tesseract)return false;ocrW=await Tesseract.createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',langPath:'https://tessdata.projectnaptha.com/4.0.0',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',logger:function(){}});await ocrW.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.',tessedit_pageseg_mode:'6'});ocrR=true;return true}catch(e){return false}}
+async function scanOCR(file,url){
+  try{if(!await initOCR())return null;var cvs=document.getElementById('cvs'),ctx=cvs.getContext('2d');var ori=await getExif(file),rot=(ori>=5&&ori<=8);var img=await new Promise(function(ok,err){var i=new Image();i.onload=function(){ok(i)};i.onerror=err;i.src=url});var W=img.naturalWidth,H=img.naturalHeight,cw=rot?H:W,ch=rot?W:H;var sc=Math.min(2,Math.max(1,1600/Math.max(cw,ch)));cvs.width=Math.round(cw*sc);cvs.height=Math.round(ch*sc);ctx.scale(sc,sc);drawOri(ctx,img,ori,W,H);ctx.setTransform(1,0,0,1,0,0);var id=ctx.getImageData(0,0,cvs.width,cvs.height),px=id.data;for(var i=0;i<px.length;i+=4){var g=Math.round(0.299*px[i]+0.587*px[i+1]+0.114*px[i+2]);var b=Math.min(255,Math.max(0,(g-128)*1.8+128));px[i]=px[i+1]=px[i+2]=b}ctx.putImageData(id,0,0);var res=await ocrW.recognize(cvs.toDataURL('image/png'));return exSN(res.data.text)}catch(e){return null}
+}
+function exSN(t){if(!t)return null;var c=t.toUpperCase().replace(/[^A-Z0-9\-_.]/g,' ').trim(),tk=c.split(/\s+/).filter(function(x){return x.length>=4});if(!tk.length)return null;tk.sort(function(a,b){return scTk(b)-scTk(a)});return tk[0]||null}
+function scTk(t){var s=t.length;if(/[A-Z]/.test(t)&&/[0-9]/.test(t))s+=5;if(/^[A-Z]+$/.test(t))s-=2;return s}
+async function doScan(file,url){return scanMode==='ocr'?scanOCR(file,url):scanBC(file,url)}
+
+// ── NAMING ───────────────────────────────────
+function fName(n,sn,ext){return 'N'+n+'_M_('+sn+').'+ext}
+function lName(n,sn,ext){return 'N'+n+'_SN_('+sn+').'+ext}
+
+// ── HOME ─────────────────────────────────────
+function buildGrid(){
+  var g=document.getElementById('mvpsGrid');g.innerHTML='';
+  var done=0,prog=0;
+  for(var i=1;i<=TOTAL;i++){
+    var m=mvpsMeta[i]||{status:'empty',count:0};
+    if(m.status==='done')done++;else if(m.status==='progress')prog++;
+    var d=document.createElement('div');
+    d.className='mvps-card st-'+m.status;
+    d.setAttribute('data-id',i);
+    var cnt=m.count>0?m.count+' mod'+(m.count===1?'':'s'):'';
+    d.innerHTML='<div class="mc-num">MVPS-'+i+'</div><div class="mc-cnt">'+(cnt||'&nbsp;')+'</div><div class="mc-dot"></div>';
+    d.addEventListener('click',function(){openMvps(parseInt(this.getAttribute('data-id')))});
+    g.appendChild(d);
+  }
+  document.getElementById('sDone').textContent=done;
+  document.getElementById('sProg').textContent=prog;
+  document.getElementById('sRem').textContent=TOTAL-done-prog;
+}
+function updHomeCard(id){
+  var m=mvpsMeta[id]||{status:'empty',count:0};
+  var c=document.querySelector('.mvps-card[data-id="'+id+'"]');if(!c)return;
+  c.className='mvps-card st-'+m.status;
+  var cnt=m.count>0?m.count+' mod'+(m.count===1?'':'s'):'';
+  c.querySelector('.mc-cnt').textContent=cnt||'\u00A0';
+  c.querySelector('.mc-num').style.color='';
+  var done=0,prog=0;
+  for(var i=1;i<=TOTAL;i++){var x=mvpsMeta[i]||{status:'empty'};if(x.status==='done')done++;else if(x.status==='progress')prog++}
+  document.getElementById('sDone').textContent=done;
+  document.getElementById('sProg').textContent=prog;
+  document.getElementById('sRem').textContent=TOTAL-done-prog;
+}
+
+// ── NAV ──────────────────────────────────────
+function showPage(id){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});document.getElementById(id).classList.add('active')}
+function goHome(){curId=null;mods=[];showPage('pgHome')}
+
+async function openMvps(id){
+  curId=id;
+  document.getElementById('mvpsTitle').textContent='MVPS-'+id;
+  var meta=mvpsMeta[id]||{status:'empty',count:0};
+  var db=document.getElementById('doneBtn');
+  db.textContent=meta.status==='done'?'✓ DONE':'MARK DONE';
+  db.className='done-btn'+(meta.status==='done'?' marked':'');
+  var saved=await dbLoadMods(id);
+  mods=[];nextNum=1;
+  saved.sort(function(a,b){return a.num-b.num});
+  for(var i=0;i<saved.length;i++){var s=saved[i];mods.push({id:s.id,num:s.num,sn:s.sn||'',ok:s.ok||false,scanning:false,editing:false,ff:s.ff||null,furl:s.furl||null,lf:s.lf||null,lurl:s.lurl||null});if(s.num>=nextNum)nextNum=s.num+1}
+  document.getElementById('modList').innerHTML='';
+  document.getElementById('mvpsEmpty').style.display=mods.length?'none':'';
+  for(var i=0;i<mods.length;i++) appendCard(mods[i].id);
+  recount();showPage('pgMvps');
+}
+
+// ── MARK DONE ────────────────────────────────
+function toggleDone(){
+  var meta=mvpsMeta[curId]||{status:'progress',count:mods.length};
+  var ns=meta.status==='done'?'progress':'done';
+  if(ns==='done'&&mods.filter(function(m){return m.ok}).length===0){notify('No confirmed modules yet','warn');return}
+  var ok=mods.filter(function(m){return m.ok}).length;
+  dbSaveMeta(curId,ns,ok);
+  var db=document.getElementById('doneBtn');
+  db.textContent=ns==='done'?'✓ DONE':'MARK DONE';
+  db.className='done-btn'+(ns==='done'?' marked':'');
+  updHomeCard(curId);
+  notify(ns==='done'?'MVPS-'+curId+' marked as done':'Marked as in progress');
+}
+
+// ── MODULE ADD ───────────────────────────────
+function addMod(){
+  var id=Date.now().toString(36)+Math.random().toString(36).slice(2);
+  var num=mods.reduce(function(max,m){return Math.max(max,m.num)},0)+1;
+  var m={id:id,num:num,ff:null,furl:null,lf:null,lurl:null,sn:'',ok:false,scanning:false,editing:false};
+  mods.push(m);dbSaveMod(m);
+  document.getElementById('mvpsEmpty').style.display='none';
+  document.getElementById('modList').insertAdjacentHTML('beforeend',buildCard(m));
+  recount();updMeta();
+  setTimeout(function(){document.getElementById('C'+id)?.scrollIntoView({behavior:'smooth',block:'center'})},120);
+}
+
+// ── HOLD TO DELETE ───────────────────────────
+function startHold(id,el){
+  el._ht=setTimeout(function(){
+    el.classList.remove('holding');
+    var m=getM(id);
+    if(!m)return;
+    if(!confirm('Delete module N'+m.num+'?\nThis cannot be undone.')){return}
+    dbDelMod(id);mods=mods.filter(function(x){return x.id!==id});
+    document.getElementById('C'+id)?.remove();
+    recount();updMeta();
+    if(!mods.length)document.getElementById('mvpsEmpty').style.display='';
+    notify('Module deleted');
+  },1500);
+  el.classList.add('holding');
+}
+function endHold(el){clearTimeout(el._ht);el.classList.remove('holding')}
+
+// ── RENDER ───────────────────────────────────
+function getM(id){for(var i=0;i<mods.length;i++)if(mods[i].id===id)return mods[i];return null}
+
+function buildCard(m){
+  var s1=!!m.furl,s2=!!m.lurl,dn=m.ok;
+  var p1=s1?'done':'act',p2=s2?'done':(s1?'act':''),p3=dn?'done':(s2?'act':'');
+  var fe=m.ff?(m.ff.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+  var le=m.lf?(m.lf.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+  var snP=dn?(m.editing
+    ?'<input type="text" id="ei'+m.id+'" value="'+m.sn+'" style="background:var(--s2);border:1px solid var(--ac);border-radius:5px;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:3px 8px;outline:none;width:130px;letter-spacing:.04em" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="getM(\''+m.id+'\').sn=this.value.trim().toUpperCase()" onkeydown="if(event.key===\'Enter\')doneEdit(\''+m.id+'\')">'
+    :'<span class="csn">'+m.sn+'</span>')
+    :'<span class="csn dim">'+(s2?'ENTER S/N':s1?'STEP 2: LABEL':'STEP 1: FRONT')+'</span>';
+  var eBtn=dn?(m.editing?'<button class="btn bsm bgn" onclick="doneEdit(\''+m.id+'\')">SAVE</button>':'<button class="btn bsm bedit" onclick="startEdit(\''+m.id+'\')">EDIT S/N</button>'):'';
+  var dBtn='<div class="del-hold" id="dh'+m.id+'" onmousedown="startHold(\''+m.id+'\',this)" ontouchstart="startHold(\''+m.id+'\',this)" onmouseup="endHold(this)" onmouseleave="endHold(this)" ontouchend="endHold(this)" ontouchcancel="endHold(this)" title="Hold 1.5s to delete"><div class="dhf"></div><span style="position:relative;z-index:1;color:var(--mu)">&#128465;</span></div>';
+  var fc=m.furl?'<img class="pimg" src="'+m.furl+'">'
+    :'<div class="ph" onclick="cap(\''+m.id+'\',\'front\')"><div class="ei">&#128247;</div><div class="et">TAP TO SHOOT</div></div>';
+  var fn=dn?'<div class="pname ready">'+fName(m.num,m.sn,fe)+'</div>':'<div class="pname dim">'+(m.furl?'waiting for S/N...':'not taken')+'</div>';
+  var lc=m.lurl?'<img class="pimg" src="'+m.lurl+'">'
+    :'<div class="ph'+(s1?'':' off')+'"'+(s1?' onclick="cap(\''+m.id+'\',\'label\')"':'')+'>'+
+    '<div class="ei">&#128290;</div><div class="et">'+(s1?'TAP TO SHOOT':'AFTER STEP 1')+'</div></div>';
+  var ln=dn?'<div class="pname ready">'+lName(m.num,m.sn,le)+'</div>':'<div class="pname dim">'+(m.lurl?'waiting for S/N...':'not taken')+'</div>';
+  var sr='';
+  if(m.scanning)sr='<div class="srow"><span class="sbadge sscan">'+(scanMode==='ocr'?'READING OCR...':'SCANNING BARCODE...')+'</span></div>';
+  else if(!dn&&s2&&m.sn)sr='<div class="srow"><span class="sbadge sfound">'+(scanMode==='ocr'?'OCR READ':'BARCODE READ')+'</span><span class="sv">'+m.sn+'</span></div>';
+  else if(!dn&&s2&&!m.sn)sr='<div class="srow"><span class="sbadge snope">NOT DETECTED — TYPE BELOW</span></div>';
+  var ir=(!dn&&s1&&s2&&!m.scanning)?'<div class="irow"><label>S/N</label><input type="text" id="si'+m.id+'" value="'+m.sn+'" placeholder="Serial number" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="upd(\''+m.id+'\',this.value)" onkeydown="if(event.key===\'Enter\')setmod(\''+m.id+'\')"><button class="btn bset" id="bs'+m.id+'" onclick="setmod(\''+m.id+'\')"'+(m.sn?'':' disabled')+'>SET</button></div>':'';
+  return '<div class="card" id="C'+m.id+'"><div class="ch"><div class="ch-l"><span class="num-badge">N'+m.num+'</span>'+snP+'</div><div class="ch-r">'+eBtn+dBtn+'</div></div>'+
+    '<div class="pills"><div class="pill '+p1+'"></div><div class="pill '+p2+'"></div><div class="pill '+p3+'"></div></div>'+
+    '<div class="photos"><div class="pc"><div class="plbl">&#9312; FRONT</div>'+fc+fn+'</div><div class="pc"><div class="plbl">&#9313; LABEL</div>'+lc+ln+'</div></div>'+sr+ir+'</div>';
+}
+
+function render(id){var m=getM(id);if(!m)return;var ex=document.getElementById('C'+id);if(ex)ex.outerHTML=buildCard(m);recount()}
+function appendCard(id){var m=getM(id);if(!m)return;document.getElementById('modList').insertAdjacentHTML('beforeend',buildCard(m))}
+function upd(id,v){var m=getM(id);if(m)m.sn=v.trim().toUpperCase();var b=document.getElementById('bs'+id);if(b)b.disabled=!v.trim()}
+function setmod(id){var m=getM(id);if(!m||!m.sn)return;m.sn=m.sn.trim().toUpperCase();m.ok=true;dbSaveMod(m);flashSaved();updMeta();render(id);notify('N'+m.num+' confirmed: '+m.sn)}
+function startEdit(id){var m=getM(id);if(m)m.editing=true;render(id);setTimeout(function(){var e=document.getElementById('ei'+id);if(e){e.focus();e.select()}},80)}
+function doneEdit(id){var m=getM(id);if(!m)return;var e=document.getElementById('ei'+id);if(e&&e.value.trim())m.sn=e.value.trim().toUpperCase();m.editing=false;dbSaveMod(m);flashSaved();render(id);notify('N'+m.num+' updated: '+m.sn)}
+function recount(){var ok=mods.filter(function(m){return m.ok}).length;document.getElementById('mvpsSub').textContent='MVPS · '+ok+'/'+mods.length+' confirmed'}
+function updMeta(){
+  if(!curId)return;
+  var ok=mods.filter(function(m){return m.ok}).length;
+  var cur=mvpsMeta[curId]||{status:'empty'};
+  var st=cur.status==='done'?'done':(mods.length>0?'progress':'empty');
+  dbSaveMeta(curId,st,ok);updHomeCard(curId);
+}
+
+// ── CAPTURE ──────────────────────────────────
+function cap(id,type){var el=document.getElementById(type==='front'?'ifront':'ilabel');el.value='';el._id=id;el._type=type;el.click()}
+document.getElementById('ifront').addEventListener('change',function(){go(this._id,'front',this.files[0])});
+document.getElementById('ilabel').addEventListener('change',function(){go(this._id,'label',this.files[0])});
+async function go(id,type,file){
+  if(!file)return;var m=getM(id);if(!m)return;
+  var url=await toDataURL(file);
+  if(type==='front'){m.ff=file;m.furl=url;dbSaveMod(m);flashSaved();updMeta();render(id)}
+  else{m.lf=file;m.lurl=url;m.scanning=true;m.sn='';dbSaveMod(m);flashSaved();render(id);
+    var res=await doScan(file,url);m.scanning=false;m.sn=res?res.toUpperCase():'';render(id);
+    setTimeout(function(){var i=document.getElementById('si'+id);if(i){i.focus();i.select();i.scrollIntoView({behavior:'smooth',block:'center'})}},150);
+    if(res)notify((scanMode==='ocr'?'OCR: ':'Barcode: ')+m.sn);else notify('Not detected — type S/N manually','warn');
+  }
+}
+
+// ── ZIP ──────────────────────────────────────
+function openZip(){
+  var ready=mods.filter(function(m){return m.ok&&m.ff&&m.lf});
+  if(!ready.length){notify('No confirmed modules yet','warn');return}
+  document.getElementById('zipName').value='MVPS-'+curId;
+  document.getElementById('mNameSub').textContent=ready.length+' module(s) ready';
+  document.getElementById('mName').classList.remove('hid');
+  setTimeout(function(){document.getElementById('zipName').focus()},200);
+}
+function goReview(){
+  var nv=document.getElementById('zipName').value.trim();if(!nv){notify('Enter a name','warn');return}
+  var ready=mods.filter(function(m){return m.ok&&m.ff&&m.lf});
+  var list=document.getElementById('reviewList');list.innerHTML='';
+  document.getElementById('reviewSub').textContent=ready.length+' module(s) · '+(ready.length*2)+' photos';
+  for(var i=0;i<ready.length;i++){
+    var m=ready[i];var fe=(m.ff.name.split('.').pop()||'jpg').toLowerCase();var le=(m.lf.name.split('.').pop()||'jpg').toLowerCase();
+    var d=document.createElement('div');d.className='review-item';
+    d.innerHTML='<div class="ri-num">SET N'+m.num+' · S/N: '+m.sn+'</div><div class="ri-file">'+fName(m.num,m.sn,fe)+'</div><div class="ri-file">'+lName(m.num,m.sn,le)+'</div>';
+    list.appendChild(d);
+  }
+  cm('mName');document.getElementById('mReview').classList.remove('hid');
+}
+async function buildZip(){
+  var nv=document.getElementById('zipName').value.trim()||'MVPS-'+curId;
+  var zn=nv.replace(/[^a-zA-Z0-9_\-]/g,'_');
+  var comp=getComp(),isO=(comp.q===1);
+  cm('mReview');
+  var ready=mods.filter(function(m){return m.ok&&m.ff&&m.lf});
+  var ovt=document.getElementById('ovt'),ovs=document.getElementById('ovs'),pf=document.getElementById('progf'),sp=document.getElementById('spin'),zl=document.getElementById('zlink'),zu=document.getElementById('zurl'),cl=document.getElementById('ovcls'),pm=document.getElementById('mProg');
+  sp.style.display='block';zl.classList.add('hid');cl.classList.add('hid');ovt.textContent=isO?'READING FILES...':'COMPRESSING...';ovs.textContent='';pf.style.width='0%';pm.classList.remove('hid');
+  var zf=[],tot=ready.length*2,done=0;
+  for(var i=0;i<ready.length;i++){
+    var m=ready[i];
+    var fe=isO?(m.ff.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+    var le=isO?(m.lf.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+    ovs.textContent='N'+m.num+' front...';
+    var fd=isO?new Uint8Array(await m.ff.arrayBuffer()):new Uint8Array(await compressImg(m.furl,comp.maxD,comp.q)||await m.ff.arrayBuffer());
+    zf.push({name:fName(m.num,m.sn,fe),data:fd});pf.style.width=Math.round(++done/tot*100)+'%';
+    ovs.textContent='N'+m.num+' label...';
+    var ld=isO?new Uint8Array(await m.lf.arrayBuffer()):new Uint8Array(await compressImg(m.lurl,comp.maxD,comp.q)||await m.lf.arrayBuffer());
+    zf.push({name:lName(m.num,m.sn,le),data:ld});pf.style.width=Math.round(++done/tot*100)+'%';
+  }
+  ovt.textContent='BUILDING ZIP...';ovs.textContent=zf.length+' photos';
+  await new Promise(function(r){setTimeout(r,60)});
+  // Add CSV report to ZIP
+  var csvStr=generateCSV(ready);
+  var csvBytes=new TextEncoder().encode(csvStr);
+  zf.push({name:zn+'_report.csv', data:csvBytes});
+
+  var bytes=mkzip(zf),blob=new Blob([bytes],{type:'application/zip'}),href=URL.createObjectURL(blob),fname=zn+'.zip';
+  try{var a=document.createElement('a');a.href=href;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a)}catch(e){}
+  sp.style.display='none';ovt.textContent='ZIP READY';ovs.textContent=ready.length+' module(s) · '+Math.round(bytes.length/1024)+'KB · '+fname;
+  zu.href=href;zu.download=fname;zu.textContent='SAVE  '+fname;zl.classList.remove('hid');cl.classList.remove('hid');
+}
+function cm(id){document.getElementById(id).classList.add('hid')}
+
+// ── TOAST ────────────────────────────────────
+function notify(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type==='warn'?'twarn':'tok')+' tshow';clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('tshow')},2800)}
+
+// ── SETTINGS ─────────────────────────────────
+var AT_TOKEN = localStorage.getItem('at_token') || '';
+var AT_BASE  = 'appmZPXOy2ZZXNzua';
+var AT_NAME  = localStorage.getItem('at_name')  || '';
+
+function openSettings(){
+  document.getElementById('settToken').value = AT_TOKEN;
+  document.getElementById('settName').value  = AT_NAME;
+  document.getElementById('mSett').classList.remove('hid');
+}
+function saveSettings(){
+  AT_TOKEN = document.getElementById('settToken').value.trim();
+  AT_NAME  = document.getElementById('settName').value.trim();
+  localStorage.setItem('at_token', AT_TOKEN);
+  localStorage.setItem('at_name',  AT_NAME);
+  cm('mSett');
+  updSyncStatus();
+  notify('Settings saved');
+}
+function updSyncStatus(){
+  var el = document.getElementById('syncStatus');
+  if(!AT_TOKEN || !AT_NAME){
+    el.textContent = 'Configure in settings \u2699';
+  } else {
+    el.textContent = 'Ready \u2014 logged in as '+AT_NAME;
+    el.style.color = 'var(--gn)';
+  }
+}
+
+// ── AIRTABLE API ─────────────────────────────
+var atFieldIds = null;
+
+async function atGetFieldIds(){
+  if(atFieldIds) return atFieldIds;
+  var resp = await fetch('https://api.airtable.com/v0/meta/bases/'+AT_BASE+'/tables',{
+    headers:{'Authorization':'Bearer '+AT_TOKEN}
+  });
+  var data = await resp.json();
+  if(!data.tables) throw new Error('Cannot read tables: '+(data.error&&data.error.message||JSON.stringify(data)));
+  var table = null;
+  for(var i=0;i<data.tables.length;i++) if(data.tables[i].name==='Modules'){table=data.tables[i];break}
+  if(!table) throw new Error('Table "Modules" not found in base');
+  atFieldIds = {};
+  for(var i=0;i<table.fields.length;i++) atFieldIds[table.fields[i].name]=table.fields[i].id;
+  return atFieldIds;
+}
+
+async function atCreateRecord(fields){
+  var resp = await fetch('https://api.airtable.com/v0/'+AT_BASE+'/Modules',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+AT_TOKEN,'Content-Type':'application/json'},
+    body:JSON.stringify({fields:fields})
+  });
+  var data = await resp.json();
+  if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+  if(!resp.ok) throw new Error('HTTP '+resp.status+': '+JSON.stringify(data));
+  return data.id;
+}
+
+function bufToB64(buf){
+  var bytes=new Uint8Array(buf),bin='';
+  for(var i=0;i<bytes.byteLength;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+async function atUploadPhoto(recordId, fieldId, arrayBuffer, filename){
+  // kept for compatibility — not used anymore
+}
+
+// ── SYNC ENGINE ──────────────────────────────
+async function runSync(){
+  if(!AT_TOKEN||!AT_NAME){ openSettings(); notify('Enter token and name first','warn'); return; }
+
+  // Load all modules from all MVPSs
+  var allMods = await dbLoadAllMods();
+  var toSync  = allMods.filter(function(m){ return m.ok && m.ff && m.lf && (!m.synced || !m.airtableId) });
+
+  if(!toSync.length){ notify('Nothing new to sync — all up to date'); return; }
+
+  // Show modal
+  var modal   = document.getElementById('mSync');
+  var sub     = document.getElementById('syncModalSub');
+  var list    = document.getElementById('syncList');
+  var pf      = document.getElementById('syncProgf');
+  var cls     = document.getElementById('syncClose');
+  list.innerHTML = '';
+  cls.classList.add('hid');
+  pf.style.width  = '0%';
+  sub.textContent = toSync.length+' module(s) to upload...';
+  modal.classList.remove('hid');
+
+  // Build row elements up front
+  var rows = {};
+  for(var i=0;i<toSync.length;i++){
+    var m = toSync[i];
+    var row = document.createElement('div');
+    row.className = 'sp-row';
+    row.innerHTML = '<span class="sp-icon">&#128230;</span>'+
+      '<span class="sp-txt">MVPS-'+m.mvid+' · N'+m.num+' · '+m.sn+'</span>'+
+      '<span class="sp-status sp-pend" id="sr'+m.id+'">PENDING</span>';
+    list.appendChild(row);
+    rows[m.id] = row;
+  }
+
+  var done=0, errors=0;
+
+  try{
+    for(var i=0;i<toSync.length;i++){
+      var m = toSync[i];
+      var badge = document.getElementById('sr'+m.id);
+      badge.className='sp-status sp-act'; badge.textContent='UPLOADING';
+      var today = new Date().toISOString().split('T')[0];
+      var fe = (m.ff.name.split('.').pop()||'jpg').toLowerCase();
+      var le = (m.lf.name.split('.').pop()||'jpg').toLowerCase();
+
+      try{
+        // Compress photos to medium quality
+        var fComp = await compressImg(m.furl, 2048, 0.82);
+        var lComp = await compressImg(m.lurl, 2048, 0.82);
+        var today = new Date().toISOString().split('T')[0];
+
+        // Build record with photos embedded as base64
+        var recFields = {
+          'Serial Number': m.sn,
+          'MVPS':          'MVPS-'+m.mvid,
+          'Set Number':    m.num,
+          'Status':        'Confirmed',
+          'Date':          today,
+          'Synced By':     AT_NAME
+        };
+        if(fComp) recFields['Front Photo'] = [{filename:fName(m.num,m.sn,'jpg'), data:bufToB64(fComp)}];
+        if(lComp) recFields['Label Photo']  = [{filename:lName(m.num,m.sn,'jpg'), data:bufToB64(lComp)}];
+
+        var recId = await atCreateRecord(recFields);
+
+        // Mark synced in DB
+        dbMarkSynced(m.id, recId);
+        done++;
+        badge.className='sp-status sp-ok'; badge.textContent='DONE';
+      }catch(err){
+        errors++;
+        badge.className='sp-status sp-err'; badge.textContent='FAILED';
+        // Show the actual error under the row
+        var errDiv=document.createElement('div');
+        errDiv.style.cssText='font-size:10px;color:var(--rd);padding:3px 8px 3px 30px;letter-spacing:.03em;word-break:break-all';
+        errDiv.textContent='Error: '+err.message;
+        rows[m.id].parentNode.insertBefore(errDiv, rows[m.id].nextSibling);
+        console.error('Sync error for '+m.id+':',err);
+      }
+
+      pf.style.width = Math.round((i+1)/toSync.length*100)+'%';
+      sub.textContent = (i+1)+'/'+toSync.length+' processed...';
+    }
+  }catch(err){
+    sub.textContent = 'Error: '+err.message;
+    cls.classList.remove('hid');
+    return;
+  }
+
+  sub.textContent = done+' uploaded'+(errors?' · '+errors+' failed':'')+ ' — tap close';
+  pf.style.width = '100%';
+  cls.classList.remove('hid');
+  if(errors===0) notify('Sync complete — '+done+' module(s) uploaded');
+  else notify(errors+' failed — check console','warn');
+  updSyncStatus();
+}
+
+function dbLoadAllMods(){
+  return new Promise(function(ok){
+    if(!DB){ok([]);return}
+    try{
+      var r=DB.transaction('mods','readonly').objectStore('mods').getAll();
+      r.onsuccess=function(){ok(r.result||[])};
+      r.onerror=function(){ok([])}
+    }catch(e){ok([])}
+  });
+}
+
+function dbMarkSynced(id, recId){
+  if(!DB)return;
+  try{
+    var tx=DB.transaction('mods','readwrite'),st=tx.objectStore('mods');
+    var rq=st.get(id);
+    rq.onsuccess=function(){var rec=rq.result;if(rec){rec.synced=true;rec.airtableId=recId||null;rec.syncedAt=new Date().toISOString();st.put(rec)}}
+  }catch(e){}
+}
+
+// ── CSV FOR ZIP ───────────────────────────────
+function generateCSV(readyMods){
+  var lines=['Set Number,Serial Number,Front Photo,Label Photo,Date'];
+  var today=new Date().toISOString().split('T')[0];
+  for(var i=0;i<readyMods.length;i++){
+    var m=readyMods[i];
+    var fe=m.ff?(m.ff.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+    var le=m.lf?(m.lf.name.split('.').pop()||'jpg').toLowerCase():'jpg';
+    lines.push(['N'+m.num, m.sn, fName(m.num,m.sn,fe), lName(m.num,m.sn,le), today].join(','));
+  }
+  return lines.join('\r\n');
+}
+
+// ── INIT ─────────────────────────────────────
+openDB().then(function(){return dbLoadMeta()}).then(function(saved){
+  for(var i=0;i<saved.length;i++) mvpsMeta[saved[i].id]={status:saved[i].status,count:saved[i].count};
+  buildGrid();
+  updSyncStatus();
+}).catch(function(){buildGrid();updSyncStatus()});
+</script>
+</body>
+</html>
